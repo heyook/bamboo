@@ -78,6 +78,7 @@ defmodule Bamboo.MailgunAdapter do
     |> put_text_body(email)
     |> put_headers(email)
     |> put_custom_vars(email)
+    |> put_tags(email)
     |> filter_non_empty_mailgun_fields
   end
 
@@ -116,12 +117,17 @@ defmodule Bamboo.MailgunAdapter do
     end)
   end
 
+  defp put_tags(body, %Email{private: private}) do
+    tags = Map.get(private, :mailgun_tags, [])
+    Map.put(body, :"o:tag", tags)
+  end
+
   @mailgun_message_fields ~w(from to cc bcc subject text html)a
 
   def filter_non_empty_mailgun_fields(map) do
     Enum.filter(map, fn({key, value}) ->
       # Key is a well known mailgun field or is an header or custom var field and its value is not empty
-      (key in @mailgun_message_fields || String.starts_with?(Atom.to_string(key), ["h:", "v:"])) && !(value in [nil, "", []])
+      (key in @mailgun_message_fields || String.starts_with?(Atom.to_string(key), ["h:", "v:", "o:"])) && !(value in [nil, "", []])
     end)
   end
 
